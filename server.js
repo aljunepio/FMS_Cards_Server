@@ -111,6 +111,20 @@ app.post('/api/print-complete', async (req, res) => {
   }
 });
 
+app.post("/api/claim-job", async (req, res) => {
+  try {
+    const job = await PrintJob.findOneAndUpdate(
+      { status: "pending" },       // only free jobs
+      { status: "processing" },    // lock it immediately
+      { new: true }
+    );
+
+    res.json(job); // returns ONE job only
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Configure Cloudinary
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,

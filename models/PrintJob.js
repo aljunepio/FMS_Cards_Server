@@ -12,7 +12,7 @@ const PrintJobSchema = new mongoose.Schema({
 
   status: {
     type: String,
-    default: "pending",
+    default: "pending",  // pending | processing | done
   },
 
   createdAt: {
