@@ -10,7 +10,8 @@ const app = express();
 
 // Middleware
 app.use(cors());
-app.use(express.json()); // Allows the server to read JSON data
+app.use(express.json({ limit: "20mb" }));
+app.use(express.urlencoded({ extended: true, limit: "20mb" }));
 
 // 1. Connect to MongoDB
 const mongoUri = process.env.MONGO_URI;
@@ -29,6 +30,7 @@ app.get('/', (req, res) => {
 });
 
 const Driver = require('./models/Driver');
+const PrintJob = require('./models/PrintJob');
 
 // ROUTE 1: Save a new driver (POST)
 app.post('/api/drivers', async (req, res) => { 
@@ -48,6 +50,64 @@ app.get('/api/drivers', async (req, res) => {
     res.json(drivers);
   } catch (err) {
     res.status(500).json({ message: err.message });
+  }
+});
+
+app.post('/api/print-job', async (req, res) => {
+  try {
+    const newJob = new PrintJob({
+      frontImage: req.body.frontImage,
+      backImage: req.body.backImage,
+    });
+
+    const savedJob = await newJob.save();
+
+    res.status(201).json({
+      success: true,
+      jobId: savedJob._id,
+    });
+
+  } catch (err) {
+    console.error(err);
+
+    res.status(500).json({
+      error: err.message,
+    });
+  }
+});
+
+app.get('/api/print-jobs', async (req, res) => {
+  try {
+    const jobs = await PrintJob.find({
+      status: 'pending'
+    }).sort({ createdAt: 1 });
+
+    res.json(jobs);
+
+  } catch (err) {
+    res.status(500).json({
+      error: err.message,
+    });
+  }
+});
+
+app.post('/api/print-complete', async (req, res) => {
+  try {
+    const { jobId } = req.body;
+
+    await PrintJob.findByIdAndUpdate(jobId, {
+      status: 'printed',
+      printedAt: new Date(),
+    });
+
+    res.json({
+      success: true,
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      error: err.message,
+    });
   }
 });
 
